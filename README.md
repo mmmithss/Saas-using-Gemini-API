@@ -1,8 +1,3 @@
-Perfect! Based on what you’ve shared, I’ll help you **frame this as a solid project for your GitHub README and your resume** — even if you built it for learning, we’ll **position it as a solution-focused project**.
-
----
-
-# 📄 GitHub README: Personal Chatbot (ChatGPT Clone)
 
 ## 🧠 Personal Chatbot – ChatGPT Clone (Full-Stack MERN, TypeScript)
 
