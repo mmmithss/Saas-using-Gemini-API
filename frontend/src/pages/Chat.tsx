@@ -11,26 +11,45 @@ import {
   sendChatRequest,
 } from "../helpers/api-communicators";
 import toast from "react-hot-toast";
-type Message = {
-  role: "user" | "assistant";
-  content: string;
+
+type Part = {
+  text: string;
 };
+
+type Message = {
+  role: "user" | "model";
+  parts: Part[];
+};
+
 const Chat = () => {
   const navigate = useNavigate();
   const inputRef = useRef<HTMLInputElement | null>(null);
   const auth = useAuth();
   const [chatMessages, setChatMessages] = useState<Message[]>([]);
-  const handleSubmit = async () => {
+
+  const handleSubmit = () => {
     const content = inputRef.current?.value as string;
-    if (inputRef && inputRef.current) {
-      inputRef.current.value = "";
-    }
-    const newMessage: Message = { role: "user", content };
+    if (inputRef.current) inputRef.current.value = "";
+
+    // Step 1: push user message
+    const newMessage: Message = { role: "user", parts: [{ text: content }] };
     setChatMessages((prev) => [...prev, newMessage]);
-    const chatData = await sendChatRequest(content);
-    setChatMessages([...chatData.chats]);
-    //
+
+    // Step 2: push placeholder model message
+    const modelMessage: Message = { role: "model", parts: [{ text: "" }] };
+    setChatMessages((prev) => [...prev, modelMessage]);
+
+    // Step 3: start streaming
+    sendChatRequest(content, (chunk) => {
+      modelMessage.parts[0].text += chunk;
+      setChatMessages((prev) => {
+        const updated = [...prev];
+        updated[updated.length - 1] = { ...modelMessage }; // replace last message
+        return updated;
+      });
+    });
   };
+
   const handleDeleteChats = async () => {
     try {
       toast.loading("Deleting Chats", { id: "deletechats" });
@@ -42,12 +61,13 @@ const Chat = () => {
       toast.error("Deleting chats failed", { id: "deletechats" });
     }
   };
+
   useLayoutEffect(() => {
     if (auth?.isLoggedIn && auth.user) {
       toast.loading("Loading Chats", { id: "loadchats" });
       getUserChats()
         .then((data) => {
-          setChatMessages([...data.chats]);
+          setChatMessages([...data.history]);
           toast.success("Successfully loaded chats", { id: "loadchats" });
         })
         .catch((err) => {
@@ -56,6 +76,7 @@ const Chat = () => {
         });
     }
   }, [auth]);
+
   useEffect(() => {
     if (!auth?.user) {
       return navigate("/login");
@@ -100,7 +121,7 @@ const Chat = () => {
             }}
           >
             {auth?.user?.name[0]}
-            {auth?.user?.name.split(" ")[1][0]}
+            {auth?.user?.name.split(" ")[1]?.[0] ?? ""}
           </Avatar>
           <Typography sx={{ mx: "auto", fontFamily: "work sans" }}>
             You are talking to a ChatBOT
@@ -145,7 +166,7 @@ const Chat = () => {
             fontWeight: "600",
           }}
         >
-          Using Some Api-Model
+          Using Gemini-2.5-flash-Model
         </Typography>
         <Box
           sx={{
@@ -161,10 +182,16 @@ const Chat = () => {
             scrollBehavior: "smooth",
           }}
         >
-          {chatMessages.map((chat, index) => (
-            //@ts-ignore
-            <ChatItem content={chat.content} role={chat.role} key={index} />
-          ))}
+          {chatMessages.length > 0 &&
+            chatMessages.map((chat, index) =>
+              chat?.parts[0]?.text ? (
+                <ChatItem
+                  content={chat?.parts[0]?.text}
+                  role={chat.role}
+                  key={index}
+                />
+              ) : null
+            )}
         </Box>
         <div
           style={{

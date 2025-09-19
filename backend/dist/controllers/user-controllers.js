@@ -23,14 +23,17 @@ export const userSignup = async (req, res, next) => {
         const hashedPassword = await hash(password, 10);
         const user = new User({ name, email, password: hashedPassword });
         await user.save();
-        // create token and store cookie
+        console.log("user saved", user);
+        // clear existing cookie
         res.clearCookie(COOKIE_NAME, {
             httpOnly: true,
             domain: "localhost",
             signed: true,
             path: "/",
         });
-        const token = createToken(user._id.toString(), user.email, "7d");
+        const token = createToken(user._id.toString(), user.email);
+        console.log(token);
+        console.log("token generated");
         const expires = new Date();
         expires.setDate(expires.getDate() + 7);
         res.cookie(COOKIE_NAME, token, {
@@ -40,6 +43,7 @@ export const userSignup = async (req, res, next) => {
             httpOnly: true,
             signed: true,
         });
+        console.log("cookie set");
         return res
             .status(201)
             .json({ message: "OK", name: user.name, email: user.email });
@@ -68,7 +72,7 @@ export const userLogin = async (req, res, next) => {
             signed: true,
             path: "/",
         });
-        const token = createToken(user._id.toString(), user.email, "7d");
+        const token = createToken(user._id.toString(), user.email);
         const expires = new Date();
         expires.setDate(expires.getDate() + 7);
         res.cookie(COOKIE_NAME, token, {

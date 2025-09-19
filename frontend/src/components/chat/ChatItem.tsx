@@ -5,7 +5,6 @@ import { useAuth } from "../../context/AuthContext";
 import { coldarkDark } from "react-syntax-highlighter/dist/esm/styles/prism";
 import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
 
-
 function extractCodeFromString(message: string) {
   if (message.includes("```")) {
     const blocks = message.split("```");
@@ -33,11 +32,11 @@ const ChatItem = ({
   role,
 }: {
   content: string;
-  role: "user" | "assistant";
+  role: "user" | "model";
 }) => {
   const messageBlocks = extractCodeFromString(content);
   const auth = useAuth();
-  return role == "assistant" ? (
+  return role == "model" ? (
     <Box
       sx={{
         display: "flex",
@@ -57,9 +56,13 @@ const ChatItem = ({
         )}
         {messageBlocks &&
           messageBlocks.length &&
-          messageBlocks.map((block) =>
+          messageBlocks.map((block, index) =>
             isCodeBlock(block) ? (
-              <SyntaxHighlighter style={coldarkDark} language="javascript">
+              <SyntaxHighlighter
+                style={coldarkDark}
+                language="javascript"
+                key={index}
+              >
                 {block}
               </SyntaxHighlighter>
             ) : (
@@ -80,7 +83,7 @@ const ChatItem = ({
     >
       <Avatar sx={{ ml: "0", bgcolor: "black", color: "white" }}>
         {auth?.user?.name[0]}
-        {auth?.user?.name.split(" ")[1][0]}
+        {auth?.user?.name.split(" ")[1]?.[0] ?? ""}
       </Avatar>
       <Box>
         {!messageBlocks && (

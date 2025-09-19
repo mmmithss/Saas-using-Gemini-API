@@ -1,4 +1,4 @@
-import { NextFunction, Request, response, Response } from "express";
+import { NextFunction, Request, Response } from "express";
 import { body, ValidationChain, validationResult } from "express-validator";
 
 export const validate= (validations : ValidationChain[]) => {

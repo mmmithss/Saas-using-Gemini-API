@@ -1,84 +1,64 @@
-import User from '../models/User.js';
-import { GoogleGenerativeAI } from '@google/generative-ai';
-process.env.GOOGLE_API_KEY = 'AIzaSyBqg6t7pZg6zXx5X0jF7hO5Xy5b3nBf9p4';
-// Initialize Google Generative AI
-const apiKey = process.env.GOOGLE_API_KEY;
-if (!apiKey) {
-    throw new Error('GOOGLE_API_KEY is not defined in environment variables');
+import { createChat } from "../config/google-generative-ai-config.js";
+import User from "../models/User.js";
+async function mainStream(userId, message, res) {
+    let chat;
+    if (!chat) {
+        const user = await User.findById(userId).select("history -_id").lean();
+        console.log(user);
+        const history = user.history;
+        console.log(history);
+        chat = await createChat(history);
+    }
+    // append message to db make it a transaction 
+    const response = await chat.sendMessageStream({ message });
+    await User.updateOne({ _id: userId }, { $push: { history: { role: "user", parts: [{ text: message }] } } }, { new: true });
+    res.setHeader("Content-Type", "text/event-stream");
+    res.setHeader("Cache-Control", "no-cache");
+    res.setHeader("Connection", "keep-alive");
+    let fullResponse = "";
+    for await (const chunk of response) {
+        if (chunk.text) {
+            fullResponse += chunk.text;
+            res.write(chunk.text);
+        }
+    }
+    console.log(fullResponse);
+    //append full response to db
+    await User.updateOne({ _id: userId }, { $push: { history: { role: "model", parts: [{ text: fullResponse }] } } });
+    res.end();
 }
-const genAI = new GoogleGenerativeAI(apiKey);
-const model = genAI.getGenerativeModel({
-    model: 'gemini-1.5-flash',
-});
-const generationConfig = {
-    temperature: 1,
-    topP: 0.95,
-    topK: 64,
-    maxOutputTokens: 8192,
-    responseMimeType: 'text/plain',
-};
 export const generateChatCompletion = async (req, res, next) => {
     const { message } = req.body;
-    try {
-        // Find the user by ID
-        const user = await User.findById(res.locals.jwtData.id);
-        if (!user) {
-            return res
-                .status(401)
-                .json({ message: 'User not registered OR Token malfunctioned' });
-        }
-        // Format user's chat history
-        const chats = user.chats.map(({ role, content }) => ({
-            role,
-            content,
-        }));
-        // Start a chat session with Google Generative AI
-        const chatSession = await model.startChat({
-            generationConfig,
-            history: [],
-        });
-        // Send the new message and get the response
-        const result = await chatSession.sendMessage(message);
-        const responseText = await result.response.text();
-        // Append AI response to user's chat history
-        user.chats.push({ content: message, role: 'user' });
-        user.chats.push({ content: responseText, role: 'assistant' });
-        await user.save();
-        return res.status(200).json({ chats: user.chats });
-    }
-    catch (error) {
-        console.error('Error during chat session:', error);
-        return res.status(500).json({ message: 'Something went wrong' });
-    }
+    const user = res.locals.user;
+    const userId = user._id.toString();
+    return mainStream(userId, message.toString(), res);
 };
-// Send Chats to User
-export const sendChatsToUser = async (req, res, next) => {
+export const getHistory = async (req, res, next) => {
     try {
-        const user = await User.findById(res.locals.jwtData.id);
+        const userId = res.locals.jwtData.id;
+        const user = await User.findById(userId).select("history -_id").lean();
         if (!user) {
             return res.status(401).send("User not registered OR Token malfunctioned");
         }
-        return res.status(200).json({ message: "OK", chats: user.chats });
+        return res.status(200).json({ message: "OK", history: user.history });
     }
     catch (error) {
-        console.error(error);
-        return res.status(500).json({ message: "ERROR", cause: error.message });
+        console.log(error);
+        return res.status(500).json({ error: "Internal Server Error" });
     }
 };
-// Delete Chats
-export const deleteChats = async (req, res, next) => {
+export const deleteHistory = async (req, res, next) => {
     try {
-        const user = await User.findById(res.locals.jwtData.id);
+        const userId = res.locals.jwtData.id;
+        const user = await User.findByIdAndUpdate(userId, { $set: { history: [] } }, { new: true });
         if (!user) {
             return res.status(401).send("User not registered OR Token malfunctioned");
         }
-        // user.chats = []; // Clear user's chat history
-        await user.save();
-        return res.status(200).json({ message: "OK" });
+        return res.status(200).json({ message: "OK", history: user.history });
     }
     catch (error) {
-        console.error(error);
-        return res.status(500).json({ message: "ERROR", cause: error.message });
+        console.log(error);
+        return res.status(500).json({ error: "Internal Server Error" });
     }
 };
 //# sourceMappingURL=chat-controllers.js.map

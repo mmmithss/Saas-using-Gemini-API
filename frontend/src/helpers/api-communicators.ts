@@ -30,14 +30,30 @@ export const checkAuthStatus = async () => {
   return data;
 };
 
-export const sendChatRequest = async (message: string) => {
-  const res = await axios.post("/chat/new", { message });
-  if (res.status !== 200) {
-    throw new Error("Unable to send chat");
+export const sendChatRequest = async (
+  message: string,
+  onChunk: (chunk: string) => void
+) => {
+  const response = await fetch("http://localhost:5000/api/v1/chat/new", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    credentials: "include", // keep cookies/JWT
+    body: JSON.stringify({ message }),
+  });
+
+  if (!response.body) return;
+
+  const reader = response.body.getReader();
+  const decoder = new TextDecoder();
+
+  for (;;) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    onChunk(decoder.decode(value));
   }
-  const data = await res.data;
-  return data;
+
 };
+
 
 export const getUserChats = async () => {
   const res = await axios.get("/chat/all-chats");
@@ -60,7 +76,7 @@ export const deleteUserChats = async () => {
 export const logoutUser = async () => {
   const res = await axios.get("/user/logout");
   if (res.status !== 200) {
-    throw new Error("Unable to delete chats");
+    throw new Error("Unable to Logout");
   }
   const data = await res.data;
   return data;
