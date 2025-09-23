@@ -1,17 +1,17 @@
-import Toolbar from '@mui/material/Toolbar';
-import AppBar from '@mui/material/AppBar';
-import React from 'react';
-import Logo from './shared/Logo';
-import { useAuth } from '../context/AuthContext';
-import NavigationLink from './shared/NavigationLink';
+import Toolbar from "@mui/material/Toolbar";
+import AppBar from "@mui/material/AppBar";
+import Logo from "./shared/Logo";
+import { useAuth } from "../context/AuthContext";
+import NavigationLink from "./shared/NavigationLink";
 
 const Header = () => {
-    const auth = useAuth();
+  const auth = useAuth();
   return (
-   <AppBar sx={{ bgcolor: "transparent", position: "static", boxShadow: "none" }}
-   >
-    <Toolbar sx={{ display: "flex" }}>
-        <Logo/>
+    <AppBar
+      sx={{ bgcolor: "transparent", position: "static", boxShadow: "none" }}
+    >
+      <Toolbar sx={{ display: "flex" }}>
+        <Logo />
         <div>
           {auth?.isLoggedIn ? (
             <>
@@ -46,11 +46,9 @@ const Header = () => {
             </>
           )}
         </div>
-        
-
-    </Toolbar>
-   </AppBar>
+      </Toolbar>
+    </AppBar>
   );
-}
+};
 
-export default Header
+export default Header;

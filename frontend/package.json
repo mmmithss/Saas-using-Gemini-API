@@ -15,6 +15,7 @@
     "@mui/material": "^5.16.5",
     "axios": "^1.7.2",
     "highlighter": "^0.1.0",
+    "personal-chatbot": "file:..",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "react-hot-toast": "^2.4.1",

@@ -1,5 +1,5 @@
-import { Typography } from '@mui/material'
-import { Link } from 'react-router-dom'
+import { Typography } from "@mui/material";
+import { Link } from "react-router-dom";
 
 const Logo = () => {
   return (
@@ -11,7 +11,7 @@ const Logo = () => {
         gap: "15px",
       }}
     >
-        <Link to={"/"}>
+      <Link to={"/"}>
         <img
           src="openai.png"
           alt="openai"
@@ -28,11 +28,10 @@ const Logo = () => {
           textShadow: "2px 2px 20px #000",
         }}
       >
-        <span style={{ fontSize: "20px" }}>MY PERSONAL</span>-GPT
+        <span style={{ fontSize: "20px" }}>MY PERSONAL</span> - chatBot
       </Typography>
-      
     </div>
-  )
-}
+  );
+};
 
-export default Logo
+export default Logo;
